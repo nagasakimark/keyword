@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keyword Game</title>
+  <link rel="icon" href="img/fruits/apples.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- TOPIC MENU -->
+    <section id="menu" class="screen">
+      <div class="menu-head">
+        <h1 class="logo"><span>Keyword</span> <span class="logo-2">Game</span></h1>
+        <p class="menu-sub">Choose a topic</p>
+      </div>
+      <div id="topicGrid" class="tile-area"></div>
+      <div class="corner-btns">
+        <button class="round-btn" id="menuSound" title="Sound (M)" aria-label="Sound"></button>
+        <button class="round-btn" id="menuFull" title="Fullscreen (F)" aria-label="Fullscreen"></button>
+      </div>
+    </section>
+
+    <!-- GAME BOARD -->
+    <section id="game" class="screen hidden">
+      <header class="bar">
+        <button class="btn btn-back" id="btnBack" title="Back to topics (Esc)">◀ Topics</button>
+        <div class="bar-title" id="barTitle"></div>
+        <div class="bar-tools">
+          <div class="seg" id="viewSeg" role="group" aria-label="What to show">
+            <button data-view="both" class="on" title="Pictures and words (1)">Pic + Word</button>
+            <button data-view="words" title="Words only (2)">Words</button>
+            <button data-view="pics" title="Pictures only (3)">Pictures</button>
+          </div>
+          <button class="btn btn-tool" id="btnShuffle" title="Shuffle the order (S)">🔀 Shuffle</button>
+          <button class="btn btn-tool" id="btnRandom" title="Pick a keyword for me (R)">🎲 Pick one</button>
+          <button class="round-btn" id="gameSound" title="Sound (M)" aria-label="Sound"></button>
+          <button class="round-btn" id="gameFull" title="Fullscreen (F)" aria-label="Fullscreen"></button>
+        </div>
+      </header>
+
+      <div id="keyBanner" class="key-banner">
+        <span class="kb-hint">Click a word to make it the keyword</span>
+        <div class="kb-chosen" aria-live="polite">
+          <span class="kb-label">★ KEYWORD ★</span>
+          <img class="kb-img" alt="">
+          <span class="kb-word"></span>
+          <button class="kb-clear" id="btnClear" title="Clear keyword (Esc)" aria-label="Clear keyword">✕</button>
+        </div>
+      </div>
+
+      <main id="board" class="tile-area"></main>
+    </section>
+
+    <canvas id="fx" aria-hidden="true"></canvas>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -179,7 +179,7 @@ html, body {
   transition: background 0.3s, border 0.3s, box-shadow 0.3s;
 }
 .kb-hint { font-size: clamp(16px, 2.6vh, 28px); font-weight: 600; color: color-mix(in srgb, var(--accent-dark) 80%, #fff); }
-.kb-chosen { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; gap: clamp(10px, 1.6vw, 24px); padding: 6px 18px; }
+.kb-chosen { display: none; position: absolute; inset: 0; overflow: hidden; align-items: center; justify-content: center; gap: clamp(10px, 1.6vw, 24px); padding: 6px 18px; }
 .key-banner.has-key {
   background: linear-gradient(180deg, #fff6c4, #ffe27a);
   border: 4px solid var(--gold);
@@ -193,13 +193,36 @@ html, body {
   background: #e5322d; padding: 5px 16px 3px; border-radius: 12px; box-shadow: 0 4px 0 #8f1613;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
 }
-.kb-img { height: 84%; width: auto; max-width: 14vw; flex: 0 0 auto; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2)); }
-.kb-word {
-  font-weight: 700; font-size: clamp(30px, 6.4vh, 72px); line-height: 1; color: var(--ink);
+.kb-label { flex: 0 0 auto; white-space: nowrap; }
+.kb-list {
+  --kbfs: clamp(30px, 6.4vh, 72px);
+  flex: 0 1 auto; min-width: 0; height: 100%;
+  display: flex; align-items: center; justify-content: center; gap: calc(var(--kbfs) * 0.3);
 }
+.kb-item {
+  flex: 0 0 auto; height: 100%;
+  display: flex; align-items: center; gap: calc(var(--kbfs) * 0.22);
+  border: none; background: none; padding: 0; margin: 0; cursor: pointer;
+  font-family: var(--font); color: var(--ink); border-radius: 16px;
+  transition: transform 0.15s ease, background 0.15s;
+}
+.kb-item:hover { transform: scale(1.04); }
+.kb-item.pop { animation: banner-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.kb-img { height: min(84%, calc(var(--kbfs) * 1.35)); width: auto; max-width: 14vw; flex: 0 0 auto; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.2)); }
+.kb-word {
+  font-weight: 700; font-size: var(--kbfs); line-height: 1; color: var(--ink); white-space: nowrap;
+}
+/* several keywords: each one sits on its own white chip */
+.key-banner.multi .kb-item {
+  height: 82%;
+  background: #fff; padding: 0 calc(var(--kbfs) * 0.35) 0 calc(var(--kbfs) * 0.2);
+  border-radius: calc(var(--kbfs) * 0.45);
+  box-shadow: 0 4px 0 var(--gold-dark), 0 0 0 3px var(--gold);
+}
+.key-banner.multi .kb-item:hover { background: #ffe9e8; }
 .kb-clear {
   width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--ink); font-size: 18px;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2); margin-left: 8px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2); margin-left: 8px; flex: 0 0 auto;
 }
 .kb-clear:hover { background: #ffe9e8; }
 

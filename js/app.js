@@ -1,6 +1,6 @@
 // ============================================================
 //  Keyword Game — pick a topic, spread the words/pictures evenly
-//  on screen, click one to make it the keyword.
+//  on screen, click words to make them keywords (as many as you like).
 // ============================================================
 'use strict';
 
@@ -16,7 +16,7 @@ function shuffle(arr) {
 const state = {
   topic: null,
   items: [],          // [{ id, word, src }] in current on-screen order
-  keyword: null,      // id or null
+  keywords: [],       // chosen ids, in the order they were picked
   view: 'both',       // both | words | pics
   busy: false
 };
@@ -198,7 +198,7 @@ function layoutMenu() {
 // ------------------------------------------------------------ game board
 function openTopic(topic, fromEl) {
   state.topic = topic;
-  state.keyword = null;
+  state.keywords = [];
   state.items = shuffle(topic.items).map(id => ({ id, word: wordFor(id), src: imgFor(topic, id) }));
   const root = document.documentElement.style;
   root.setProperty('--accent', topic.accent);
@@ -215,7 +215,7 @@ function openTopic(topic, fromEl) {
 function backToMenu() {
   Sound.click();
   state.topic = null;
-  state.keyword = null;
+  state.keywords = [];
   const root = document.documentElement.style;
   ['--accent', '--accent-dark', '--accent-light'].forEach(p => root.removeProperty(p));
   $('game').classList.add('hidden');
@@ -227,15 +227,15 @@ function renderBoard(animate) {
   const board = $('board');
   board.innerHTML = '';
   delete board.dataset.laid;
-  board.className = 'tile-area board' + (state.keyword ? ' has-key' : '');
+  board.className = 'tile-area board' + (state.keywords.length ? ' has-key' : '');
   state.items.forEach((it, i) => {
-    const t = el('button', `tile view-${state.view}${animate ? '' : ' no-anim'}${state.keyword === it.id ? ' sel' : ''}`);
+    const t = el('button', `tile view-${state.view}${animate ? '' : ' no-anim'}${state.keywords.includes(it.id) ? ' sel' : ''}`);
     t.dataset.id = it.id;
     t.style.setProperty('--i', i);
     t.setAttribute('aria-label', it.word);
     t.innerHTML = `<span class="ribbon">★ KEYWORD ★</span><span class="pic"><img alt="" draggable="false" src="${it.src}"></span><span class="word"></span>`;
     t.querySelector('.word').textContent = it.word;
-    t.addEventListener('click', () => chooseKeyword(it.id, t));
+    t.addEventListener('click', () => toggleKeyword(it.id, t));
     t.addEventListener('pointerenter', () => { if (!state.busy) Sound.hover(); });
     board.appendChild(t);
   });
@@ -247,21 +247,36 @@ function layoutBoard() {
   layoutArea($('board'), state.items.length, viewRatio(), state.items.map(i => i.word), state.view);
 }
 
-function chooseKeyword(id, tileEl) {
+const isKey = id => state.keywords.includes(id);
+
+// click a tile: add it to the keywords, or take it off again if it's already one
+function toggleKeyword(id, tileEl) {
   if (state.busy) return;
   Sound.unlock();
-  if (state.keyword === id) { clearKeyword(); return; }        // click again to un-pick
-  state.keyword = id;
-  Sound.select();
-  applySelection();
-  const r = tileEl.getBoundingClientRect();
-  FX.burst(r.left + r.width / 2, r.top + r.height * 0.35, 70);
-  updateBanner(true);
+  if (isKey(id)) { removeKeyword(id); return; }
+  addKeyword(id, tileEl);
 }
 
-function clearKeyword() {
-  if (!state.keyword) return;
-  state.keyword = null;
+function addKeyword(id, tileEl) {
+  if (isKey(id)) return;
+  state.keywords.push(id);
+  Sound.select();
+  applySelection();
+  if (tileEl) { const r = tileEl.getBoundingClientRect(); FX.burst(r.left + r.width / 2, r.top + r.height * 0.35, 70); }
+  updateBanner(id);
+}
+
+function removeKeyword(id) {
+  if (!isKey(id)) return;
+  state.keywords = state.keywords.filter(k => k !== id);
+  Sound.clear();
+  applySelection();
+  updateBanner();
+}
+
+function clearKeywords() {
+  if (!state.keywords.length) return;
+  state.keywords = [];
   Sound.clear();
   applySelection();
   updateBanner();
@@ -269,24 +284,51 @@ function clearKeyword() {
 
 function applySelection() {
   const board = $('board');
-  board.classList.toggle('has-key', !!state.keyword);
+  board.classList.toggle('has-key', state.keywords.length > 0);
   board.querySelectorAll('.tile').forEach(t => {
     t.classList.remove('spot');
-    const sel = t.dataset.id === state.keyword;
+    const sel = isKey(t.dataset.id);
     if (sel && !t.classList.contains('sel')) { t.classList.remove('no-anim'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = ''; }
     t.classList.toggle('sel', sel);
   });
 }
 
-function updateBanner() {
+// banner: one chip per keyword (click a chip to remove it); `added` = the id that just joined (gets the pop)
+function updateBanner(added) {
   const b = $('keyBanner');
-  const it = state.items.find(i => i.id === state.keyword);
-  b.classList.toggle('has-key', !!it);
-  if (it) {
-    b.querySelector('.kb-img').src = it.src;
-    b.querySelector('.kb-word').textContent = it.word;
-    const chosen = b.querySelector('.kb-chosen');
-    chosen.style.animation = 'none'; void chosen.offsetWidth; chosen.style.animation = '';
+  const chosen = state.keywords.map(id => state.items.find(i => i.id === id)).filter(Boolean);
+  const wasEmpty = !b.classList.contains('has-key');
+  b.classList.toggle('has-key', chosen.length > 0);
+  b.classList.toggle('multi', chosen.length > 1);
+  b.querySelector('.kb-label').textContent = chosen.length > 1 ? `★ KEYWORDS ×${chosen.length} ★` : '★ KEYWORD ★';
+  const list = b.querySelector('.kb-list');
+  list.replaceChildren(...chosen.map(it => {
+    const c = el('button', 'kb-item' + (it.id === added ? ' pop' : ''));
+    c.title = `Remove "${it.word}"`;
+    c.setAttribute('aria-label', `Remove keyword ${it.word}`);
+    c.innerHTML = '<img class="kb-img" alt=""><span class="kb-word"></span>';
+    c.querySelector('img').src = it.src;
+    c.querySelector('.kb-word').textContent = it.word;
+    c.addEventListener('click', e => { e.stopPropagation(); if (!state.busy) removeKeyword(it.id); });
+    return c;
+  }));
+  if (chosen.length && wasEmpty) {
+    const box = b.querySelector('.kb-chosen');
+    box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+  }
+  fitBanner();
+}
+
+// shrink the banner words until every chosen keyword fits on one line
+function fitBanner() {
+  const list = $('keyBanner').querySelector('.kb-list');
+  if (!list.children.length) return;
+  const max = Math.max(30, Math.min(72, innerHeight * 0.064));
+  let fs = max;
+  list.style.setProperty('--kbfs', fs + 'px');
+  while (list.scrollWidth > list.clientWidth + 1 && fs > 13) {
+    fs *= 0.92;
+    list.style.setProperty('--kbfs', fs + 'px');
   }
 }
 
@@ -315,28 +357,34 @@ function shuffleBoard() {
   });
 }
 
-// "Pick one": a quick roulette that lands on a random keyword
+// "Pick one": a quick roulette over the tiles that aren't keywords yet, and adds the winner
 function pickRandom() {
   if (state.busy || !state.topic) return;
   Sound.unlock();
+  let tiles = [...$('board').querySelectorAll('.tile')].filter(t => !isKey(t.dataset.id));
+  if (!tiles.length) {                                     // everything is already a keyword: start over
+    state.keywords = []; applySelection(); updateBanner();
+    tiles = [...$('board').querySelectorAll('.tile')];
+  }
   state.busy = true;
-  if (state.keyword) { state.keyword = null; applySelection(); updateBanner(); }
-  const tiles = [...$('board').querySelectorAll('.tile')];
+  if (tiles.length === 1) { state.busy = false; addKeyword(tiles[0].dataset.id, tiles[0]); return; }
   const target = Math.floor(Math.random() * tiles.length);
-  const steps = tiles.length * 2 + ((target - 0 + tiles.length) % tiles.length) + 1;   // ends exactly on the target
+  const steps = tiles.length * 2 + target;               // ends exactly on the target
   let k = 0, delay = 60;
   const run = () => {
     tiles.forEach(t => t.classList.remove('spot'));
     const t = tiles[k % tiles.length];
     t.classList.add('spot');
     Sound.tick(k % 12);
-    k++;
-    if (k > steps) {
-      state.busy = false;
-      t.classList.remove('spot');
-      chooseKeyword(t.dataset.id, t);
+    if (k >= steps) {
+      setTimeout(() => {
+        state.busy = false;
+        t.classList.remove('spot');
+        addKeyword(t.dataset.id, t);
+      }, delay);
       return;
     }
+    k++;
     delay *= k > steps - 6 ? 1.35 : 1.02;
     setTimeout(run, delay);
   };
@@ -347,7 +395,7 @@ function setView(v) {
   if (state.view === v) return;
   state.view = v;
   Sound.click();
-  $('keyBanner').querySelector('.kb-hint').textContent = v === 'pics' ? 'Click a picture to make it the keyword' : 'Click a word to make it the keyword';
+  $('keyBanner').querySelector('.kb-hint').textContent = v === 'pics' ? 'Click pictures to make them keywords' : 'Click words to make them keywords';
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   document.querySelectorAll('#board .tile').forEach(t => {
     t.classList.remove('view-both', 'view-words', 'view-pics');
@@ -378,10 +426,10 @@ $('gameFull').addEventListener('click', toggleFullscreen);
 $('btnBack').addEventListener('click', backToMenu);
 $('btnShuffle').addEventListener('click', shuffleBoard);
 $('btnRandom').addEventListener('click', pickRandom);
-$('btnClear').addEventListener('click', e => { e.stopPropagation(); clearKeyword(); });
+$('btnClear').addEventListener('click', e => { e.stopPropagation(); if (!state.busy) clearKeywords(); });
 document.querySelectorAll('#viewSeg button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
 
-addEventListener('resize', () => { state.topic ? layoutBoard() : layoutMenu(); });
+addEventListener('resize', () => { state.topic ? (layoutBoard(), fitBanner()) : layoutMenu(); });
 document.addEventListener('fullscreenchange', () => setTimeout(() => { state.topic ? layoutBoard() : layoutMenu(); }, 60));
 
 addEventListener('keydown', e => {
@@ -390,7 +438,8 @@ addEventListener('keydown', e => {
   if (k === 'm') { Sound.unlock(); Sound.toggle(); }
   else if (k === 'f') toggleFullscreen();
   else if (state.topic) {
-    if (k === 'escape') { state.keyword ? clearKeyword() : backToMenu(); }
+    if (k === 'escape') { if (state.busy) return; state.keywords.length ? clearKeywords() : backToMenu(); }
+    else if (k === 'backspace') { if (!state.busy && state.keywords.length) removeKeyword(state.keywords[state.keywords.length - 1]); }
     else if (k === 's') shuffleBoard();
     else if (k === 'r') pickRandom();
     else if (k === '1') setView('both');

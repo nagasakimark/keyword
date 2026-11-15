@@ -35,19 +35,18 @@
             <button data-view="pics" title="Pictures only (3)">Pictures</button>
           </div>
           <button class="btn btn-tool" id="btnShuffle" title="Shuffle the order (S)">🔀 Shuffle</button>
-          <button class="btn btn-tool" id="btnRandom" title="Pick a keyword for me (R)">🎲 Pick one</button>
+          <button class="btn btn-tool" id="btnRandom" title="Add a random keyword (R)">🎲 Pick one</button>
           <button class="round-btn" id="gameSound" title="Sound (M)" aria-label="Sound"></button>
           <button class="round-btn" id="gameFull" title="Fullscreen (F)" aria-label="Fullscreen"></button>
         </div>
       </header>
 
       <div id="keyBanner" class="key-banner">
-        <span class="kb-hint">Click a word to make it the keyword</span>
+        <span class="kb-hint">Click words to make them keywords</span>
         <div class="kb-chosen" aria-live="polite">
           <span class="kb-label">★ KEYWORD ★</span>
-          <img class="kb-img" alt="">
-          <span class="kb-word"></span>
-          <button class="kb-clear" id="btnClear" title="Clear keyword (Esc)" aria-label="Clear keyword">✕</button>
+          <div class="kb-list"></div>
+          <button class="kb-clear" id="btnClear" title="Clear all keywords (Esc)" aria-label="Clear all keywords">✕</button>
         </div>
       </div>
 
